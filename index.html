@@ -403,7 +403,7 @@
 <body>
     <div class="game-container">
         <div class="score-display">分數: <span id="score">0</span></div>
-        <div class="timer-display">時間: <span id="timer">90</span>秒</div>
+        <div class="timer-display">時間: <span id="timer">60</span>秒</div>
         <div class="score-change" id="scoreChange"></div>
         <canvas id="gameCanvas"></canvas>
         <div class="welcome-screen" id="welcomeScreen">
@@ -539,7 +539,7 @@
         let gameState = {
             running: false,
             score: 0,
-            timeLeft: 90, // 1.5分鐘 = 90秒
+            timeLeft: 60, // 1分鐘 = 60秒
             gameSpeed: 2,
             gravity: 0.6,
             jumpPower: -12,
@@ -657,7 +657,7 @@
             resizeCanvas();
             gameState.running = true;
             gameState.score = 0;
-            gameState.timeLeft = 90; // 重置為1.5分鐘
+            gameState.timeLeft = 60; // 重置為1分鐘
             gameState.lastTimeUpdate = Date.now();
             gameObjects = [];
             obstacles = [];
@@ -710,7 +710,7 @@
 
         // 生成遊戲物件
         function spawnGameObject() {
-            const types = ['moon', 'mooncake', 'pomelo', 'rabbit'];
+            const types = ['moon', 'mooncake', 'pomelo', 'rabbit', 'moon', 'mooncake']; // 增加月亮和月餅出現機率
             const type = types[Math.floor(Math.random() * types.length)];
             
             // 將視窗分為三等分：上、中、下
@@ -1206,20 +1206,32 @@
             try {
                 // 使用 Google Apps Script 讀取數據
                 const response = await fetch(
-                    'https://script.google.com/macros/s/AKfycbyT2k3Y7Q04Bc7_WCtbOM6-cY3G7mbEL6T28DjAaoWU7aquiMaWNoPybleM47khMW8r/exec?action=read',
+                    'https://script.google.com/macros/s/AKfycbyT2k3Y7Q04Bc7_WCtbOM6-cY3G7mbEL6T28DjAaoWU7aquiMaWNoPybleM47khMW8r/exec',
                     {
                         method: 'GET',
-                        mode: 'no-cors'
+                        mode: 'cors'
                     }
                 );
                 
-                // 由於 no-cors 模式，我們無法直接讀取回應
-                // 所以使用本地存儲作為備用方案
-                console.log('嘗試從 Google Apps Script 讀取排行榜');
-                return getLocalLeaderboard();
+                if (!response.ok) {
+                    throw new Error('無法獲取排行榜數據');
+                }
+                
+                const data = await response.json();
+                console.log('從 Google Apps Script 讀取到數據:', data);
+                
+                if (data.success && data.data) {
+                    // 按分數排序（高分在前）
+                    const leaderboard = data.data.sort((a, b) => b.score - a.score);
+                    console.log('排行榜數據:', leaderboard);
+                    return leaderboard;
+                } else {
+                    throw new Error('數據格式錯誤');
+                }
                 
             } catch (error) {
                 console.error('獲取排行榜失敗:', error);
+                console.log('使用本地存儲作為備用方案');
                 // 備用方案：使用本地存儲
                 return getLocalLeaderboard();
             }
@@ -1414,13 +1426,13 @@
                 }
             }
             
-            // 隨機生成物件
-            if (Math.random() < 0.02) {
+            // 隨機生成物件（確保不超過3秒空白）
+            if (Math.random() < 0.05) {
                 spawnGameObject();
             }
             
-            // 隨機生成障礙物
-            if (Math.random() < 0.01) {
+            // 隨機生成障礙物（增加頻率）
+            if (Math.random() < 0.02) {
                 spawnObstacle();
             }
             
@@ -1435,8 +1447,12 @@
                 }
             }
             
-            // 增加遊戲速度
-            gameState.gameSpeed += 0.001;
+            // 增加遊戲速度（後20秒加速）
+            if (gameState.timeLeft <= 20) {
+                gameState.gameSpeed += 0.003; // 後20秒加速更快
+            } else {
+                gameState.gameSpeed += 0.001; // 前40秒正常加速
+            }
             
             requestAnimationFrame(gameLoop);
         }
