@@ -241,107 +241,6 @@
             box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
         }
 
-        /* 排行榜彈窗樣式 */
-        .leaderboard-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .leaderboard-content {
-            background: rgba(0, 0, 0, 0.95);
-            color: white;
-            padding: 30px;
-            border-radius: 15px;
-            border: 2px solid #ffd700;
-            box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
-            max-width: 400px;
-            width: 90%;
-            text-align: center;
-        }
-
-        .leaderboard-content h3 {
-            color: #ffd700;
-            margin-bottom: 20px;
-            font-size: 24px;
-        }
-
-        .leaderboard-list {
-            max-height: 300px;
-            overflow-y: auto;
-            margin-bottom: 20px;
-        }
-
-        .leaderboard-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px;
-            margin: 5px 0;
-            background: rgba(255, 215, 0, 0.1);
-            border-radius: 8px;
-            border: 1px solid rgba(255, 215, 0, 0.3);
-        }
-
-        .leaderboard-item.current-player {
-            background: rgba(255, 215, 0, 0.2);
-            border: 2px solid #ffd700;
-        }
-
-        .leaderboard-rank {
-            font-weight: bold;
-            color: #ffd700;
-            min-width: 30px;
-            font-size: 18px;
-        }
-
-        .leaderboard-info {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            margin: 0 10px;
-        }
-
-        .leaderboard-name {
-            font-weight: bold;
-            color: white;
-            font-size: 16px;
-        }
-
-        .leaderboard-time {
-            color: #ccc;
-            font-size: 12px;
-            margin-top: 2px;
-        }
-
-        .leaderboard-score {
-            font-weight: bold;
-            color: #4CAF50;
-            font-size: 18px;
-        }
-
-        .close-btn {
-            background: linear-gradient(45deg, #f44336, #e57373);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .close-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        }
 
         .score-display {
             position: absolute;
@@ -448,21 +347,10 @@
             
             <div class="game-over-buttons">
                 <button class="game-over-btn primary" onclick="restartGame()">🔄 重新挑戰</button>
-                <button class="game-over-btn secondary" onclick="showLeaderboard()">🏆 查看排行</button>
                 <button class="game-over-btn secondary" onclick="shareToSocial()">📱 分享給朋友，阿蘇祝大家中秋快樂</button>
             </div>
         </div>
         
-        <!-- 排行榜彈窗 -->
-        <div class="leaderboard-modal" id="leaderboardModal">
-            <div class="leaderboard-content">
-                <h3>🏆 排行榜</h3>
-                <div class="leaderboard-list" id="leaderboardList">
-                    <!-- 排行榜內容將由JavaScript動態生成 -->
-                </div>
-                <button class="close-btn" onclick="closeLeaderboard()">關閉</button>
-            </div>
-        </div>
     </div>
 
     <script>
@@ -1098,7 +986,7 @@
             finalScoreElement.textContent = `你的分數: ${gameState.score}`;
             blessingElement.textContent = blessing;
             
-            // 保存分數到排行榜
+            // 保存分數到 Google Sheets
             saveScoreToLeaderboard();
             
             gameOverElement.style.display = 'block';
@@ -1125,118 +1013,7 @@
             playerData.name = '';
         }
 
-        // 顯示排行榜（優化版）
-        async function showLeaderboard() {
-            const modal = document.getElementById('leaderboardModal');
-            const list = document.getElementById('leaderboardList');
-            
-            // 顯示載入中
-            list.innerHTML = '<p style="text-align: center; color: #ffd700;">🔄 載入排行榜中...</p>';
-            modal.style.display = 'flex';
-            
-            try {
-                // 獲取所有數據
-                const allData = await getAllLeaderboardData();
-                console.log('showLeaderboard 獲取到的所有數據:', allData);
-                console.log('showLeaderboard 所有數據長度:', allData.length);
-                
-                // 按分數排序
-                const sortedData = allData.sort((a, b) => b.score - a.score);
-                
-                // 找到當前玩家的排名
-                const currentPlayerIndex = sortedData.findIndex(player => player.name === playerData.name);
-                const currentPlayerRank = currentPlayerIndex + 1;
-                
-                // 清空列表
-                list.innerHTML = '';
-                
-                if (sortedData.length === 0) {
-                    list.innerHTML = '<p style="text-align: center; color: #999;">📊 暫無記錄，成為第一個玩家吧！</p>';
-                } else {
-                    // 顯示統計信息
-                    const statsDiv = document.createElement('div');
-                    statsDiv.style.cssText = 'text-align: center; margin-bottom: 15px; padding: 10px; background: rgba(255, 215, 0, 0.1); border-radius: 8px;';
-                    statsDiv.innerHTML = `
-                        <p style="margin: 5px 0; color: #ffd700; font-size: 14px;">
-                            📊 總玩家數：${sortedData.length} 人 | 
-                            🏆 最高分：${sortedData[0]?.score || 0} 分
-                        </p>
-                    `;
-                    list.appendChild(statsDiv);
-                    
-                    // 顯示前10名
-                    const top10 = sortedData.slice(0, 10);
-                    
-                    top10.forEach((player, index) => {
-                        const item = document.createElement('div');
-                        item.className = 'leaderboard-item';
-                        if (player.name === playerData.name) {
-                            item.classList.add('current-player');
-                        }
-                        
-                        // 添加排名圖標
-                        let rankIcon = '';
-                        if (index === 0) rankIcon = '🥇';
-                        else if (index === 1) rankIcon = '🥈';
-                        else if (index === 2) rankIcon = '🥉';
-                        else rankIcon = `${index + 1}`;
-                        
-                        item.innerHTML = `
-                            <span class="leaderboard-rank">${rankIcon}</span>
-                            <div class="leaderboard-info">
-                                <span class="leaderboard-name">${player.name}</span>
-                                <span class="leaderboard-time">${player.time}</span>
-                            </div>
-                            <span class="leaderboard-score">${player.score}</span>
-                        `;
-                        list.appendChild(item);
-                    });
-                    
-                    // 如果當前玩家不在前10名，顯示當前玩家排名
-                    if (currentPlayerIndex >= 10) {
-                        const separator = document.createElement('div');
-                        separator.innerHTML = '<div style="text-align: center; color: #666; margin: 10px 0;">...</div>';
-                        list.appendChild(separator);
-                        
-                        const currentPlayer = sortedData[currentPlayerIndex];
-                        const item = document.createElement('div');
-                        item.className = 'leaderboard-item current-player';
-                        
-                        item.innerHTML = `
-                            <span class="leaderboard-rank">${currentPlayerRank}</span>
-                            <div class="leaderboard-info">
-                                <span class="leaderboard-name">${currentPlayer.name} (您)</span>
-                                <span class="leaderboard-time">${currentPlayer.time}</span>
-                            </div>
-                            <span class="leaderboard-score">${currentPlayer.score}</span>
-                        `;
-                        list.appendChild(item);
-                    }
-                    
-                    // 添加刷新按鈕
-                    const refreshBtn = document.createElement('button');
-                    refreshBtn.innerHTML = '🔄 刷新排行榜';
-                    refreshBtn.style.cssText = 'width: 100%; padding: 10px; margin-top: 15px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;';
-                    refreshBtn.onclick = () => showLeaderboard();
-                    list.appendChild(refreshBtn);
-                }
-            } catch (error) {
-                list.innerHTML = '<p style="text-align: center; color: #f44336;">❌ 載入失敗，請稍後再試</p>';
-            }
-        }
 
-        // 關閉排行榜
-        function closeLeaderboard() {
-            document.getElementById('leaderboardModal').style.display = 'none';
-        }
-
-        // 點擊彈窗外部關閉排行榜
-        document.addEventListener('click', function(event) {
-            const modal = document.getElementById('leaderboardModal');
-            if (event.target === modal) {
-                closeLeaderboard();
-            }
-        });
 
         // 分享到社群
         function shareToSocial() {
@@ -1246,7 +1023,7 @@
             if (navigator.share) {
                 // 使用原生分享API（行動裝置）
                 navigator.share({
-                    title: '摘月計畫 - 中秋節遊戲',
+                    title: '摘月計畫 - 誰是摘月王',
                     text: shareText,
                     url: shareUrl
                 }).catch(err => console.log('分享失敗:', err));
@@ -1263,87 +1040,11 @@
             }
         }
 
-        // Google Apps Script 配置（安全方案）
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyT2k3Y7Q04Bc7_WCtbOM6-cY3G7mbEL6T28DjAaoWU7aquiMaWNoPybleM47khMW8r/exec';
+        // 資料庫配置（已部署）
+        const DATABASE_URL = 'https://script.google.com/macros/s/AKfycbyT2k3Y7Q04Bc7_WCtbOM6-cY3G7mbEL6T28DjAaoWU7aquiMaWNoPybleM47khMW8r/exec';
 
-        // 獲取所有排行榜數據（使用 Google Apps Script）
-        async function getAllLeaderboardData() {
-            try {
-                console.log('正在從 Google Apps Script 讀取數據...');
-                
-                const response = await fetch(APPS_SCRIPT_URL, {
-                    method: 'GET',
-                    mode: 'cors'
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
-                const data = await response.json();
-                console.log('Google Apps Script 原始數據:', data);
-                
-                if (data.success && data.data && data.data.length > 0) {
-                    // 按分數排序（高分在前）
-                    const allData = data.data.sort((a, b) => b.score - a.score);
-                    console.log('Google Apps Script 處理後數據:', allData);
-                    console.log('數據總數:', allData.length);
-                    return allData;
-                } else {
-                    throw new Error('沒有數據或數據格式錯誤');
-                }
-                
-            } catch (error) {
-                console.error('Google Apps Script 讀取失敗:', error);
-                console.log('使用本地存儲作為備用方案');
-                return getLocalLeaderboard();
-            }
-        }
 
-        // 獲取排行榜數據（使用 Google Apps Script）
-        async function getLeaderboard() {
-            try {
-                console.log('正在從 Google Apps Script 讀取數據...');
-                
-                const response = await fetch(APPS_SCRIPT_URL, {
-                    method: 'GET',
-                    mode: 'cors'
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
-                const data = await response.json();
-                console.log('Google Apps Script 原始數據:', data);
-                
-                if (data.success && data.data && data.data.length > 0) {
-                    // 按分數排序（高分在前）
-                    const allData = data.data.sort((a, b) => b.score - a.score);
-                    // 只返回前10名
-                    const leaderboard = allData.slice(0, 10);
-                    console.log('排行榜數據（前10名）:', leaderboard);
-                    console.log('排行榜數據總數:', leaderboard.length);
-                    return leaderboard;
-                } else {
-                    throw new Error('沒有數據或數據格式錯誤');
-                }
-                
-            } catch (error) {
-                console.error('Google Apps Script 讀取失敗:', error);
-                console.log('使用本地存儲作為備用方案');
-                return getLocalLeaderboard();
-            }
-        }
 
-        // 本地排行榜備用方案
-        function getLocalLeaderboard() {
-            const stored = localStorage.getItem('moonCatcherLeaderboard');
-            if (stored) {
-                return JSON.parse(stored);
-            }
-            return [];
-        }
 
         // 保存分數到Google Sheets
         async function saveScoreToLeaderboard() {
@@ -1362,8 +1063,8 @@
             console.log('準備保存分數:', scoreData);
             
             try {
-                // 使用 Google Apps Script 保存數據（安全方案）
-                const response = await fetch(APPS_SCRIPT_URL, {
+                // 使用資料庫保存數據（已部署）
+                const response = await fetch(DATABASE_URL, {
                     method: 'POST',
                     mode: 'no-cors',
                     headers: {
@@ -1375,35 +1076,14 @@
                 console.log('已發送數據到 Google Apps Script:', scoreData);
                 console.log('分數已保存到 Google Sheets');
                 
-                // 同時保存到本地作為備用
-                saveToLocalLeaderboard();
+                // 數據已成功保存到 Google Sheets
                 
             } catch (error) {
                 console.error('保存到 Google Sheets 失敗:', error);
-                console.log('使用本地存儲作為備用方案');
-                saveToLocalLeaderboard();
+                console.log('數據保存失敗，但遊戲可以繼續進行');
             }
         }
 
-        // 本地保存備用方案
-        function saveToLocalLeaderboard() {
-            const leaderboard = getLocalLeaderboard();
-            const newEntry = {
-                rank: leaderboard.length + 1,
-                time: new Date().toLocaleString('zh-TW'),
-                name: playerData.name,
-                score: gameState.score
-            };
-            
-            leaderboard.push(newEntry);
-            leaderboard.sort((a, b) => b.score - a.score);
-            
-            if (leaderboard.length > 10) {
-                leaderboard.splice(10);
-            }
-            
-            localStorage.setItem('moonCatcherLeaderboard', JSON.stringify(leaderboard));
-        }
 
         // 遊戲主循環
         function gameLoop() {
