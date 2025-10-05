@@ -1246,23 +1246,26 @@
             RANGE: 'Sheet1!A:C' // 讀取A到C列（時間、名字、分數）
         };
 
-        // 使用 Google Sheets API 讀取數據
+        // 使用 Google Sheets API 讀取數據（改進版）
         async function getGoogleSheetsData() {
             try {
                 const { SHEET_ID, API_KEY, RANGE } = GOOGLE_SHEETS_CONFIG;
                 
-                // 使用 CORS 代理來避免跨域問題
-                const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+                console.log('正在從 Google Sheets API 讀取數據...');
+                console.log('SHEET_ID:', SHEET_ID);
+                console.log('API_KEY:', API_KEY ? '已設置' : '未設置');
+                console.log('RANGE:', RANGE);
+                
+                // 直接使用 Google Sheets API，不使用代理
                 const apiUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}?key=${API_KEY}`;
                 
-                console.log('正在從 Google Sheets API 讀取數據...');
-                
-                const response = await fetch(proxyUrl + apiUrl, {
+                const response = await fetch(apiUrl, {
                     method: 'GET',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
+                    mode: 'cors'
                 });
+                
+                console.log('API 回應狀態:', response.status);
+                console.log('API 回應標頭:', response.headers);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
