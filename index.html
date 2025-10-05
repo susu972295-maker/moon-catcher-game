@@ -364,6 +364,7 @@
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
         }
 
+
         .score-change {
             position: absolute;
             top: 60px;
@@ -448,7 +449,7 @@
             <div class="game-over-buttons">
                 <button class="game-over-btn primary" onclick="restartGame()">🔄 重新挑戰</button>
                 <button class="game-over-btn secondary" onclick="showLeaderboard()">🏆 查看排行</button>
-                <button class="game-over-btn secondary" onclick="shareToSocial()">📱 跟朋友分享摘月計畫，並祝他中秋快樂</button>
+                <button class="game-over-btn secondary" onclick="shareToSocial()">📱 分享給朋友，阿蘇祝大家中秋快樂</button>
             </div>
         </div>
         
@@ -710,7 +711,18 @@
 
         // 生成遊戲物件
         function spawnGameObject() {
-            const types = ['moon', 'mooncake', 'pomelo', 'rabbit', 'moon', 'mooncake']; // 增加月亮和月餅出現機率
+            // 檢查月亮數量限制
+            const moonCount = gameObjects.filter(obj => obj.type === 'moon').length;
+            
+            let types;
+            if (moonCount >= 4) {
+                // 如果月亮已達上限，只生成其他物品
+                types = ['mooncake', 'pomelo', 'rabbit'];
+            } else {
+                // 正常生成，但減少月亮機率
+                types = ['moon', 'mooncake', 'pomelo', 'rabbit', 'mooncake', 'pomelo', 'rabbit'];
+            }
+            
             const type = types[Math.floor(Math.random() * types.length)];
             
             // 將視窗分為三等分：上、中、下
@@ -1426,14 +1438,31 @@
                 }
             }
             
-            // 隨機生成物件（確保不超過3秒空白）
-            if (Math.random() < 0.05) {
-                spawnGameObject();
-            }
-            
-            // 隨機生成障礙物（增加頻率）
-            if (Math.random() < 0.02) {
-                spawnObstacle();
+            // 遊戲難度調整
+            if (gameState.timeLeft <= 20) {
+                // 最後20秒：扣分項目增加
+                if (Math.random() < 0.08) {
+                    spawnObstacle(); // 障礙物頻率提高
+                }
+                if (Math.random() < 0.03) {
+                    spawnGameObject(); // 收集物頻率降低
+                }
+            } else if (gameState.timeLeft <= 30) {
+                // 最後30秒：速度加快
+                if (Math.random() < 0.05) {
+                    spawnGameObject();
+                }
+                if (Math.random() < 0.02) {
+                    spawnObstacle();
+                }
+            } else {
+                // 前30秒：正常模式
+                if (Math.random() < 0.05) {
+                    spawnGameObject();
+                }
+                if (Math.random() < 0.02) {
+                    spawnObstacle();
+                }
             }
             
             // 更新粒子
@@ -1447,11 +1476,13 @@
                 }
             }
             
-            // 增加遊戲速度（後20秒加速）
+            // 增加遊戲速度（分階段加速）
             if (gameState.timeLeft <= 20) {
-                gameState.gameSpeed += 0.003; // 後20秒加速更快
+                gameState.gameSpeed += 0.004; // 最後20秒：扣分項目增加 + 速度持續加快
+            } else if (gameState.timeLeft <= 30) {
+                gameState.gameSpeed += 0.002; // 最後30秒：速度加快
             } else {
-                gameState.gameSpeed += 0.001; // 前40秒正常加速
+                gameState.gameSpeed += 0.001; // 前30秒：正常加速
             }
             
             requestAnimationFrame(gameLoop);
