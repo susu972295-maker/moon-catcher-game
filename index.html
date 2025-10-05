@@ -1125,17 +1125,17 @@
             playerData.name = '';
         }
 
-        // 顯示排行榜
+        // 顯示排行榜（優化版）
         async function showLeaderboard() {
             const modal = document.getElementById('leaderboardModal');
             const list = document.getElementById('leaderboardList');
             
             // 顯示載入中
-            list.innerHTML = '<p style="text-align: center; color: #ffd700;">載入中...</p>';
+            list.innerHTML = '<p style="text-align: center; color: #ffd700;">🔄 載入排行榜中...</p>';
             modal.style.display = 'flex';
             
             try {
-                // 獲取所有數據（不限制前10名）
+                // 獲取所有數據
                 const allData = await getAllLeaderboardData();
                 console.log('showLeaderboard 獲取到的所有數據:', allData);
                 console.log('showLeaderboard 所有數據長度:', allData.length);
@@ -1151,8 +1151,19 @@
                 list.innerHTML = '';
                 
                 if (sortedData.length === 0) {
-                    list.innerHTML = '<p style="text-align: center; color: #999;">暫無記錄</p>';
+                    list.innerHTML = '<p style="text-align: center; color: #999;">📊 暫無記錄，成為第一個玩家吧！</p>';
                 } else {
+                    // 顯示統計信息
+                    const statsDiv = document.createElement('div');
+                    statsDiv.style.cssText = 'text-align: center; margin-bottom: 15px; padding: 10px; background: rgba(255, 215, 0, 0.1); border-radius: 8px;';
+                    statsDiv.innerHTML = `
+                        <p style="margin: 5px 0; color: #ffd700; font-size: 14px;">
+                            📊 總玩家數：${sortedData.length} 人 | 
+                            🏆 最高分：${sortedData[0]?.score || 0} 分
+                        </p>
+                    `;
+                    list.appendChild(statsDiv);
+                    
                     // 顯示前10名
                     const top10 = sortedData.slice(0, 10);
                     
@@ -1163,8 +1174,15 @@
                             item.classList.add('current-player');
                         }
                         
+                        // 添加排名圖標
+                        let rankIcon = '';
+                        if (index === 0) rankIcon = '🥇';
+                        else if (index === 1) rankIcon = '🥈';
+                        else if (index === 2) rankIcon = '🥉';
+                        else rankIcon = `${index + 1}`;
+                        
                         item.innerHTML = `
-                            <span class="leaderboard-rank">${index + 1}</span>
+                            <span class="leaderboard-rank">${rankIcon}</span>
                             <div class="leaderboard-info">
                                 <span class="leaderboard-name">${player.name}</span>
                                 <span class="leaderboard-time">${player.time}</span>
@@ -1194,9 +1212,16 @@
                         `;
                         list.appendChild(item);
                     }
+                    
+                    // 添加刷新按鈕
+                    const refreshBtn = document.createElement('button');
+                    refreshBtn.innerHTML = '🔄 刷新排行榜';
+                    refreshBtn.style.cssText = 'width: 100%; padding: 10px; margin-top: 15px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;';
+                    refreshBtn.onclick = () => showLeaderboard();
+                    list.appendChild(refreshBtn);
                 }
             } catch (error) {
-                list.innerHTML = '<p style="text-align: center; color: #f44336;">載入失敗，請稍後再試</p>';
+                list.innerHTML = '<p style="text-align: center; color: #f44336;">❌ 載入失敗，請稍後再試</p>';
             }
         }
 
@@ -1238,130 +1263,75 @@
             }
         }
 
-        // Google Sheets 配置
-        const GOOGLE_SHEETS_CONFIG = {
-            // 請替換為您的Google Sheets ID和API金鑰
-            SHEET_ID: '1I14sWUZNfA74f-ro9VLCaMqmmTtAkoRQIFljW4403Bw', // 從Google Sheets URL中獲取
-            API_KEY: 'AIzaSyA5VK32dsGs99zq-0HyCgQvhBictnHF1aA',   // 🔑 請在這裡填入您的API金鑰
-            RANGE: 'Sheet1!A:C' // 讀取A到C列（時間、名字、分數）
-        };
+        // Google Apps Script 配置（安全方案）
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyT2k3Y7Q04Bc7_WCtbOM6-cY3G7mbEL6T28DjAaoWU7aquiMaWNoPybleM47khMW8r/exec';
 
-        // 使用 Google Sheets API 讀取數據（改進版）
-        async function getGoogleSheetsData() {
+        // 獲取所有排行榜數據（使用 Google Apps Script）
+        async function getAllLeaderboardData() {
             try {
-                const { SHEET_ID, API_KEY, RANGE } = GOOGLE_SHEETS_CONFIG;
+                console.log('正在從 Google Apps Script 讀取數據...');
                 
-                console.log('正在從 Google Sheets API 讀取數據...');
-                console.log('SHEET_ID:', SHEET_ID);
-                console.log('API_KEY:', API_KEY ? '已設置' : '未設置');
-                console.log('RANGE:', RANGE);
-                
-                // 直接使用 Google Sheets API，不使用代理
-                const apiUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}?key=${API_KEY}`;
-                
-                const response = await fetch(apiUrl, {
+                const response = await fetch(APPS_SCRIPT_URL, {
                     method: 'GET',
                     mode: 'cors'
                 });
-                
-                console.log('API 回應狀態:', response.status);
-                console.log('API 回應標頭:', response.headers);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
                 
                 const data = await response.json();
-                console.log('Google Sheets API 原始數據:', data);
+                console.log('Google Apps Script 原始數據:', data);
                 
-                if (data.values && data.values.length > 0) {
-                    // 跳過標題行，轉換為正確格式
-                    const records = [];
-                    for (let i = 1; i < data.values.length; i++) {
-                        const row = data.values[i];
-                        if (row.length >= 3 && row[0] && row[1] && row[2]) {
-                            records.push({
-                                time: row[0],
-                                name: row[1],
-                                score: parseInt(row[2]) || 0
-                            });
-                        }
-                    }
-                    
-                    console.log('Google Sheets API 處理後數據:', records);
-                    console.log('數據總數:', records.length);
-                    return records;
+                if (data.success && data.data && data.data.length > 0) {
+                    // 按分數排序（高分在前）
+                    const allData = data.data.sort((a, b) => b.score - a.score);
+                    console.log('Google Apps Script 處理後數據:', allData);
+                    console.log('數據總數:', allData.length);
+                    return allData;
                 } else {
                     throw new Error('沒有數據或數據格式錯誤');
                 }
                 
             } catch (error) {
-                console.error('Google Sheets API 讀取失敗:', error);
+                console.error('Google Apps Script 讀取失敗:', error);
                 console.log('使用本地存儲作為備用方案');
                 return getLocalLeaderboard();
             }
         }
 
-        // 獲取所有排行榜數據（優先使用 Google Sheets API）
-        async function getAllLeaderboardData() {
-            try {
-                // 先嘗試從 Google Sheets API 讀取數據
-                const apiData = await getGoogleSheetsData();
-                
-                if (apiData && apiData.length > 1) {
-                    console.log('使用 Google Sheets API 數據:', apiData.length, '筆');
-                    return apiData;
-                } else {
-                    console.log('Google Sheets API 數據不足，使用本地存儲');
-                    return getLocalLeaderboard();
-                }
-                
-            } catch (error) {
-                console.error('獲取所有排行榜數據失敗:', error);
-                console.log('使用本地存儲作為備用方案');
-                return getLocalLeaderboard();
-            }
-        }
-
-        // 獲取排行榜數據（限制前10名）
+        // 獲取排行榜數據（使用 Google Apps Script）
         async function getLeaderboard() {
             try {
-                // 使用 Google Apps Script 讀取數據
-                const response = await fetch(
-                    'https://script.google.com/macros/s/AKfycbyT2k3Y7Q04Bc7_WCtbOM6-cY3G7mbEL6T28DjAaoWU7aquiMaWNoPybleM47khMW8r/exec',
-                    {
-                        method: 'GET',
-                        mode: 'cors'
-                    }
-                );
+                console.log('正在從 Google Apps Script 讀取數據...');
+                
+                const response = await fetch(APPS_SCRIPT_URL, {
+                    method: 'GET',
+                    mode: 'cors'
+                });
                 
                 if (!response.ok) {
-                    throw new Error('無法獲取排行榜數據');
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
                 
                 const data = await response.json();
-                console.log('從 Google Apps Script 讀取到數據:', data);
-                console.log('數據總數:', data.data ? data.data.length : 0);
+                console.log('Google Apps Script 原始數據:', data);
                 
-                if (data.success && data.data) {
+                if (data.success && data.data && data.data.length > 0) {
                     // 按分數排序（高分在前）
                     const allData = data.data.sort((a, b) => b.score - a.score);
-                    console.log('所有數據:', allData);
-                    console.log('所有數據總數:', allData.length);
-                    
                     // 只返回前10名
                     const leaderboard = allData.slice(0, 10);
                     console.log('排行榜數據（前10名）:', leaderboard);
                     console.log('排行榜數據總數:', leaderboard.length);
                     return leaderboard;
                 } else {
-                    throw new Error('數據格式錯誤');
+                    throw new Error('沒有數據或數據格式錯誤');
                 }
                 
             } catch (error) {
-                console.error('獲取排行榜失敗:', error);
+                console.error('Google Apps Script 讀取失敗:', error);
                 console.log('使用本地存儲作為備用方案');
-                // 備用方案：使用本地存儲
                 return getLocalLeaderboard();
             }
         }
@@ -1392,31 +1362,25 @@
             console.log('準備保存分數:', scoreData);
             
             try {
-                // 使用Google Apps Script Web App（推薦方式）
-                const response = await fetch('https://script.google.com/macros/s/AKfycbyT2k3Y7Q04Bc7_WCtbOM6-cY3G7mbEL6T28DjAaoWU7aquiMaWNoPybleM47khMW8r/exec', {
+                // 使用 Google Apps Script 保存數據（安全方案）
+                const response = await fetch(APPS_SCRIPT_URL, {
                     method: 'POST',
-                    mode: 'no-cors', // 添加 no-cors 模式
+                    mode: 'no-cors',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify(scoreData)
                 });
                 
-                console.log('已發送數據到Google Apps Script:', scoreData);
-                
-                // 由於 no-cors 模式，我們無法檢查回應狀態
-                // 但我們假設發送成功，因為沒有拋出錯誤
-                console.log('分數已保存到Google Sheets');
+                console.log('已發送數據到 Google Apps Script:', scoreData);
+                console.log('分數已保存到 Google Sheets');
                 
                 // 同時保存到本地作為備用
                 saveToLocalLeaderboard();
                 
-                // 靜默保存，不顯示訊息
-                
             } catch (error) {
-                console.error('保存到Google Sheets失敗:', error);
-                // 靜默處理錯誤，不顯示失敗訊息
-                // 備用方案：保存到本地
+                console.error('保存到 Google Sheets 失敗:', error);
+                console.log('使用本地存儲作為備用方案');
                 saveToLocalLeaderboard();
             }
         }
