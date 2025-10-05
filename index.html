@@ -1135,16 +1135,28 @@
             modal.style.display = 'flex';
             
             try {
-                // 獲取排行榜數據
-                const leaderboard = await getLeaderboard();
+                // 獲取所有數據（不限制前10名）
+                const allData = await getAllLeaderboardData();
+                console.log('showLeaderboard 獲取到的所有數據:', allData);
+                console.log('showLeaderboard 所有數據長度:', allData.length);
+                
+                // 按分數排序
+                const sortedData = allData.sort((a, b) => b.score - a.score);
+                
+                // 找到當前玩家的排名
+                const currentPlayerIndex = sortedData.findIndex(player => player.name === playerData.name);
+                const currentPlayerRank = currentPlayerIndex + 1;
                 
                 // 清空列表
                 list.innerHTML = '';
                 
-                if (leaderboard.length === 0) {
+                if (sortedData.length === 0) {
                     list.innerHTML = '<p style="text-align: center; color: #999;">暫無記錄</p>';
                 } else {
-                    leaderboard.forEach((player, index) => {
+                    // 顯示前10名
+                    const top10 = sortedData.slice(0, 10);
+                    
+                    top10.forEach((player, index) => {
                         const item = document.createElement('div');
                         item.className = 'leaderboard-item';
                         if (player.name === playerData.name) {
@@ -1161,6 +1173,27 @@
                         `;
                         list.appendChild(item);
                     });
+                    
+                    // 如果當前玩家不在前10名，顯示當前玩家排名
+                    if (currentPlayerIndex >= 10) {
+                        const separator = document.createElement('div');
+                        separator.innerHTML = '<div style="text-align: center; color: #666; margin: 10px 0;">...</div>';
+                        list.appendChild(separator);
+                        
+                        const currentPlayer = sortedData[currentPlayerIndex];
+                        const item = document.createElement('div');
+                        item.className = 'leaderboard-item current-player';
+                        
+                        item.innerHTML = `
+                            <span class="leaderboard-rank">${currentPlayerRank}</span>
+                            <div class="leaderboard-info">
+                                <span class="leaderboard-name">${currentPlayer.name} (您)</span>
+                                <span class="leaderboard-time">${currentPlayer.time}</span>
+                            </div>
+                            <span class="leaderboard-score">${currentPlayer.score}</span>
+                        `;
+                        list.appendChild(item);
+                    }
                 }
             } catch (error) {
                 list.innerHTML = '<p style="text-align: center; color: #f44336;">載入失敗，請稍後再試</p>';
@@ -1213,7 +1246,45 @@
             RANGE: 'Sheet1!A:C' // 讀取A到C列（時間、名字、分數）
         };
 
-        // 獲取排行榜數據（通過Google Apps Script）
+        // 獲取所有排行榜數據（不限制數量）
+        async function getAllLeaderboardData() {
+            try {
+                // 使用 Google Apps Script 讀取數據
+                const response = await fetch(
+                    'https://script.google.com/macros/s/AKfycbyT2k3Y7Q04Bc7_WCtbOM6-cY3G7mbEL6T28DjAaoWU7aquiMaWNoPybleM47khMW8r/exec',
+                    {
+                        method: 'GET',
+                        mode: 'cors'
+                    }
+                );
+                
+                if (!response.ok) {
+                    throw new Error('無法獲取排行榜數據');
+                }
+                
+                const data = await response.json();
+                console.log('從 Google Apps Script 讀取到所有數據:', data);
+                console.log('所有數據總數:', data.data ? data.data.length : 0);
+                
+                if (data.success && data.data) {
+                    // 按分數排序（高分在前）
+                    const allData = data.data.sort((a, b) => b.score - a.score);
+                    console.log('所有數據排序後:', allData);
+                    console.log('所有數據總數:', allData.length);
+                    return allData;
+                } else {
+                    throw new Error('數據格式錯誤');
+                }
+                
+            } catch (error) {
+                console.error('獲取所有排行榜失敗:', error);
+                console.log('使用本地存儲作為備用方案');
+                // 備用方案：使用本地存儲
+                return getLocalLeaderboard();
+            }
+        }
+
+        // 獲取排行榜數據（限制前10名）
         async function getLeaderboard() {
             try {
                 // 使用 Google Apps Script 讀取數據
@@ -1231,11 +1302,18 @@
                 
                 const data = await response.json();
                 console.log('從 Google Apps Script 讀取到數據:', data);
+                console.log('數據總數:', data.data ? data.data.length : 0);
                 
                 if (data.success && data.data) {
                     // 按分數排序（高分在前）
-                    const leaderboard = data.data.sort((a, b) => b.score - a.score);
-                    console.log('排行榜數據:', leaderboard);
+                    const allData = data.data.sort((a, b) => b.score - a.score);
+                    console.log('所有數據:', allData);
+                    console.log('所有數據總數:', allData.length);
+                    
+                    // 只返回前10名
+                    const leaderboard = allData.slice(0, 10);
+                    console.log('排行榜數據（前10名）:', leaderboard);
+                    console.log('排行榜數據總數:', leaderboard.length);
                     return leaderboard;
                 } else {
                     throw new Error('數據格式錯誤');
