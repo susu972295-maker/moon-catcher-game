@@ -6,11 +6,29 @@
     <title>摘月計畫 - 中秋節互動小遊戲</title>
     <meta name="description" content="中秋節快樂！一起來摘月亮、收集月餅、柚子、月兔，體驗節慶氛圍的互動小遊戲">
     <meta name="keywords" content="中秋節,摘月計畫,互動遊戲,月餅,柚子,月兔,節慶遊戲">
-    <meta property="og:title" content="摘月計畫 - 中秋節互動小遊戲">
-    <meta property="og:description" content="中秋節快樂！一起來摘月亮、收集月餅、柚子、月兔，體驗節慶氛圍的互動小遊戲">
-    <meta property="og:image" content="https://via.placeholder.com/1200x630/ffd700/000000?text=摘月計畫">
-    <meta property="og:url" content="">
+    <!-- Open Graph 標籤 (Facebook, LINE, 等社群媒體) -->
+    <meta property="og:title" content="🌕 摘月計畫 - 中秋節互動小遊戲">
+    <meta property="og:description" content="中秋節快樂！一起來摘月亮、收集月餅、柚子、月兔，體驗節慶氛圍的互動小遊戲。挑戰你的反應速度，看看誰最會摘月亮！">
+    <meta property="og:image" content="https://drive.google.com/uc?export=view&id=1U2uc7sCZ-ej1LzDo2JmYT-z_gL6XeXJK">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="摘月計畫遊戲預覽圖">
+    <meta property="og:url" content="https://your-domain.com">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="摘月計畫">
+    <meta property="og:locale" content="zh_TW">
+    
+    <!-- Twitter Card 標籤 -->
     <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="🌕 摘月計畫 - 中秋節互動小遊戲">
+    <meta name="twitter:description" content="中秋節快樂！一起來摘月亮、收集月餅、柚子、月兔，體驗節慶氛圍的互動小遊戲。挑戰你的反應速度，看看誰最會摘月亮！">
+    <meta name="twitter:image" content="https://drive.google.com/uc?export=view&id=1U2uc7sCZ-ej1LzDo2JmYT-z_gL6XeXJK">
+    <meta name="twitter:image:alt" content="摘月計畫遊戲預覽圖">
+    
+    <!-- LINE 專用標籤 -->
+    <meta property="line:title" content="🌕 摘月計畫 - 中秋節互動小遊戲">
+    <meta property="line:description" content="中秋節快樂！一起來摘月亮、收集月餅、柚子、月兔，體驗節慶氛圍的互動小遊戲。挑戰你的反應速度，看看誰最會摘月亮！">
+    <meta property="line:image" content="https://drive.google.com/uc?export=view&id=1U2uc7sCZ-ej1LzDo2JmYT-z_gL6XeXJK">
     <style>
         * {
             margin: 0;
@@ -347,7 +365,7 @@
             
             <div class="game-over-buttons">
                 <button class="game-over-btn primary" onclick="restartGame()">🔄 重新挑戰</button>
-                <button class="game-over-btn secondary" onclick="shareToSocial()">📱 分享給朋友，阿蘇祝大家中秋快樂</button>
+                <button class="game-over-btn secondary" onclick="shareGame()">📱 分享給朋友</button>
             </div>
         </div>
         
@@ -424,18 +442,28 @@
             name: ''
         };
 
+        // 檢測設備性能
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const isLowEndDevice = navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2;
+        
+        // 性能監控
+        let frameCount = 0;
+        let lastFpsTime = 0;
+        let currentFps = 60;
+        
         // 遊戲狀態
         let gameState = {
             running: false,
             score: 0,
             timeLeft: 60, // 1分鐘 = 60秒
-            gameSpeed: 2,
+            gameSpeed: isMobile ? 2.5 : 2, // 溫和的初始速度
             gravity: 0.6,
             jumpPower: -12,
             jumpLevel: 0, // 跳躍等級 (0-1)
             maxJumpLevel: 1, // 最大跳躍等級
             jumpCooldown: 0, // 跳躍冷卻時間
-            lastTimeUpdate: 0 // 上次時間更新
+            lastTimeUpdate: 0, // 上次時間更新
+            performanceMode: isMobile || isLowEndDevice // 性能模式
         };
 
         // 角色
@@ -699,8 +727,12 @@
                 player.velocityY = jumpPower;
                 player.onGround = false;
                 
-                // 跳躍噴煙效果
-                for (let i = 0; i < 3 + gameState.jumpLevel; i++) {
+                // 跳躍噴煙效果（性能模式優化）
+                const particleCount = gameState.performanceMode ? 
+                    Math.max(1, 2 + gameState.jumpLevel) : 
+                    (3 + gameState.jumpLevel);
+                    
+                for (let i = 0; i < particleCount; i++) {
                     particles.push(new Particle(
                         player.x + player.width/2,
                         player.y + player.height,
@@ -803,8 +835,8 @@
             ctx.shadowColor = '#ffd700';
             ctx.shadowBlur = 10 * glowIntensity;
             
-            // 浮動動畫
-            const floatOffset = Math.sin((obj.animationFrame || 0) * 2) * 3;
+            // 浮動動畫（與玩家角色相同的頻率）
+            const floatOffset = Math.sin((obj.animationFrame || 0) * 2) * 1;
             const drawY = obj.y + floatOffset;
             
             // 根據物件類型繪製對應圖片
@@ -879,10 +911,9 @@
         function drawObstacle(obstacle) {
             ctx.save();
             
-            // 障礙物浮動動畫
+            // 浮動動畫（與玩家角色相同的頻率）
             obstacle.animationFrame = obstacle.animationFrame || 0;
-            obstacle.animationFrame += 0.1;
-            const floatOffset = Math.sin(obstacle.animationFrame * 2) * 2;
+            const floatOffset = Math.sin(obstacle.animationFrame * 2) * 1;
             const drawY = obstacle.y + floatOffset;
             
             // 障礙物陰影效果
@@ -959,15 +990,56 @@
             ctx.stroke();
         }
 
-        // 繪製星星背景
+        // 靜態星星背景（完全平均分布 + 速度感效果）
         function drawStars() {
             ctx.fillStyle = '#fff';
-            for (let i = 0; i < 20; i++) {
-                const x = (i * 50 + Date.now() * 0.01) % canvas.width;
-                const y = (i * 30) % (canvas.height - 100);
-                ctx.fillRect(x, y, 2, 2);
+            
+            // 計算畫布尺寸
+            const canvasWidth = canvas.width;
+            const canvasHeight = canvas.height - 100; // 排除地面區域
+            
+            // 定義固定的星星位置（完全靜態，平均分布）
+            const fixedStars = [
+                // 第一行（上方）
+                {x: canvasWidth * 0.15, y: canvasHeight * 0.2},
+                {x: canvasWidth * 0.35, y: canvasHeight * 0.15},
+                {x: canvasWidth * 0.55, y: canvasHeight * 0.25},
+                {x: canvasWidth * 0.75, y: canvasHeight * 0.2},
+                {x: canvasWidth * 0.9, y: canvasHeight * 0.18},
+                
+                // 第二行（中上）
+                {x: canvasWidth * 0.1, y: canvasHeight * 0.4},
+                {x: canvasWidth * 0.25, y: canvasHeight * 0.35},
+                {x: canvasWidth * 0.45, y: canvasHeight * 0.42},
+                {x: canvasWidth * 0.65, y: canvasHeight * 0.38},
+                {x: canvasWidth * 0.85, y: canvasHeight * 0.4},
+                
+                // 第三行（中下）
+                {x: canvasWidth * 0.2, y: canvasHeight * 0.6},
+                {x: canvasWidth * 0.4, y: canvasHeight * 0.55},
+                {x: canvasWidth * 0.6, y: canvasHeight * 0.62},
+                {x: canvasWidth * 0.8, y: canvasHeight * 0.58},
+                {x: canvasWidth * 0.95, y: canvasHeight * 0.6},
+                
+                // 第四行（下方，性能模式不顯示）
+                {x: canvasWidth * 0.12, y: canvasHeight * 0.75},
+                {x: canvasWidth * 0.3, y: canvasHeight * 0.8},
+                {x: canvasWidth * 0.5, y: canvasHeight * 0.75},
+                {x: canvasWidth * 0.7, y: canvasHeight * 0.78},
+                {x: canvasWidth * 0.88, y: canvasHeight * 0.8}
+            ];
+            
+            // 根據性能模式選擇星星數量
+            const starsToDraw = gameState.performanceMode ? 
+                fixedStars.slice(0, 15) : 
+                fixedStars.slice(0, 20);
+            
+            for (let star of starsToDraw) {
+                ctx.fillRect(star.x, star.y, 2, 2);
             }
         }
+
+
 
         // 遊戲結束
         function gameOver() {
@@ -982,7 +1054,7 @@
                 blessing = blessings.high;
             }
             
-            playerGreetingElement.textContent = `親愛的${playerData.name}，`;
+            playerGreetingElement.textContent = `嗨～${playerData.name}，`;
             finalScoreElement.textContent = `你的分數: ${gameState.score}`;
             blessingElement.textContent = blessing;
             
@@ -1015,30 +1087,53 @@
 
 
 
-        // 分享到社群
-        function shareToSocial() {
-            const shareText = `🌕 中秋節快樂！我在摘月計畫中得到了 ${gameState.score} 分！快來一起摘月亮，祝福你中秋節快樂！🎑`;
+        // 簡單分享功能
+        function shareGame() {
+            const shareText = `🌕 中秋節快樂！我在摘月計畫中得到了 ${gameState.score} 分！快來一起摘月亮！🎑`;
             const shareUrl = window.location.href;
             
+            // 檢查是否支援 Web Share API
             if (navigator.share) {
-                // 使用原生分享API（行動裝置）
+                // 使用原生分享功能
                 navigator.share({
-                    title: '摘月計畫 - 誰是摘月王',
+                    title: '摘月計畫 - 中秋節互動小遊戲',
                     text: shareText,
                     url: shareUrl
-                }).catch(err => console.log('分享失敗:', err));
-            } else {
-                // 複製到剪貼簿
-                const fullText = `${shareText}\n${shareUrl}`;
-                navigator.clipboard.writeText(fullText).then(() => {
-                    alert('分享內容已複製到剪貼簿！\n\n' + fullText);
-                }).catch(() => {
-                    // 備用方案：顯示分享內容
-                    const shareContent = `${shareText}\n\n連結：${shareUrl}`;
-                    prompt('請複製以下內容分享：', shareContent);
+                }).catch(err => {
+                    console.log('分享失敗:', err);
+                    fallbackShare(shareText, shareUrl);
                 });
+            } else {
+                // 降級到複製連結方式
+                fallbackShare(shareText, shareUrl);
             }
         }
+        
+        // 降級分享方式（複製連結）
+        function fallbackShare(shareText, shareUrl) {
+            const fullText = `${shareText}\n\n遊戲連結：${shareUrl}`;
+            
+            if (navigator.clipboard) {
+                // 使用 Clipboard API
+                navigator.clipboard.writeText(fullText).then(() => {
+                    alert('📋 分享內容已複製到剪貼簿！\n\n你可以貼上到任何聊天軟體或社群媒體分享給朋友！');
+                }).catch(() => {
+                    promptShare(fullText);
+                });
+            } else {
+                // 降級到 prompt
+                promptShare(fullText);
+            }
+        }
+        
+        // 使用 prompt 顯示分享內容
+        function promptShare(fullText) {
+            const userInput = prompt('📱 分享給朋友\n\n請複製以下內容分享：', fullText);
+            if (userInput) {
+                alert('感謝分享！🎉');
+            }
+        }
+        
 
         // 資料庫配置（已部署）
         const DATABASE_URL = 'https://script.google.com/macros/s/AKfycbyT2k3Y7Q04Bc7_WCtbOM6-cY3G7mbEL6T28DjAaoWU7aquiMaWNoPybleM47khMW8r/exec';
@@ -1089,11 +1184,26 @@
         function gameLoop() {
             if (!gameState.running) return;
             
+            // FPS監控
+            frameCount++;
+            const now = performance.now();
+            if (now - lastFpsTime >= 1000) {
+                currentFps = frameCount;
+                frameCount = 0;
+                lastFpsTime = now;
+                
+                // 動態調整性能模式
+                if (currentFps < 30 && !gameState.performanceMode) {
+                    gameState.performanceMode = true;
+                    console.log('性能模式已啟用 - FPS:', currentFps);
+                }
+            }
+            
             // 清空畫布
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            // 繪製背景
-            drawStars();
+            // 繪製背景（性能模式優化）
+            drawStars(); // 始終繪製星星，但數量會根據性能模式調整
             drawGround();
             
             // 更新遊戲時間
@@ -1128,8 +1238,8 @@
             // 更新遊戲物件
             for (let i = gameObjects.length - 1; i >= 0; i--) {
                 const obj = gameObjects[i];
-                obj.x -= gameState.gameSpeed;
-                obj.animationFrame += 0.1;
+                obj.x -= gameState.gameSpeed * 1.0; // 溫和的物件移動速度
+                obj.animationFrame += 0.1; // 正常動畫速度
                 
                 // 檢查收集
                 if (!obj.collected && checkCollision(player, obj)) {
@@ -1158,8 +1268,8 @@
             // 更新障礙物
             for (let i = obstacles.length - 1; i >= 0; i--) {
                 const obstacle = obstacles[i];
-                obstacle.x -= gameState.gameSpeed;
-                obstacle.animationFrame += 0.1;
+                obstacle.x -= gameState.gameSpeed * 1.0; // 溫和的障礙物移動速度
+                obstacle.animationFrame += 0.1; // 正常動畫速度
                 
                 // 檢查碰撞（扣分制）
                 try {
@@ -1176,8 +1286,9 @@
                             showScoreChange(-penalty, 'negative');
                             player.hitCooldown = 60; // 60幀冷卻時間（約1秒）
                             
-                            // 碰撞粒子效果
-                            for (let j = 0; j < 5; j++) {
+                            // 碰撞粒子效果（性能模式優化）
+                            const hitParticleCount = gameState.performanceMode ? 2 : 5;
+                            for (let j = 0; j < hitParticleCount; j++) {
                                 particles.push(new Particle(
                                     player.x + player.width/2,
                                     player.y + player.height/2,
@@ -1226,25 +1337,46 @@
                 }
             }
             
-            // 更新粒子
-            for (let i = particles.length - 1; i >= 0; i--) {
-                const particle = particles[i];
-                particle.update();
-                particle.draw();
-                
-                if (particle.life <= 0) {
-                    particles.splice(i, 1);
+            // 更新粒子（性能模式優化）
+            if (gameState.performanceMode) {
+                // 性能模式：跳過部分粒子更新
+                for (let i = particles.length - 1; i >= 0; i -= 2) {
+                    const particle = particles[i];
+                    particle.update();
+                    particle.draw();
+                    
+                    if (particle.life <= 0) {
+                        particles.splice(i, 1);
+                    }
+                }
+            } else {
+                // 正常模式：更新所有粒子
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    const particle = particles[i];
+                    particle.update();
+                    particle.draw();
+                    
+                    if (particle.life <= 0) {
+                        particles.splice(i, 1);
+                    }
                 }
             }
             
-            // 增加遊戲速度（分階段加速）
+            // 溫和的遊戲速度調整（讓玩家體驗有趣而不是追逐）
+            const speedMultiplier = gameState.performanceMode ? 1.2 : 1; // 溫和的速度倍數
+            
+            // 簡單的三階段速度調整
             if (gameState.timeLeft <= 20) {
-                gameState.gameSpeed += 0.004; // 最後20秒：扣分項目增加 + 速度持續加快
-            } else if (gameState.timeLeft <= 30) {
-                gameState.gameSpeed += 0.002; // 最後30秒：速度加快
+                gameState.gameSpeed += 0.003 * speedMultiplier; // 最後20秒：輕微加速
+            } else if (gameState.timeLeft <= 40) {
+                gameState.gameSpeed += 0.002 * speedMultiplier; // 中間20秒：更輕微加速
             } else {
-                gameState.gameSpeed += 0.001; // 前30秒：正常加速
+                gameState.gameSpeed += 0.001 * speedMultiplier; // 前20秒：極輕微加速
             }
+            
+            // 溫和的最大速度限制
+            const maxSpeed = gameState.performanceMode ? 6 : 5;
+            gameState.gameSpeed = Math.min(gameState.gameSpeed, maxSpeed);
             
             requestAnimationFrame(gameLoop);
         }
@@ -1277,3 +1409,4 @@
     </script>
 </body>
 </html>
+
