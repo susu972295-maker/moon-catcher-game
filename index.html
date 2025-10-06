@@ -562,12 +562,29 @@
             }
         }
 
-        // 祝福語
-        const blessings = {
-            low: "月亮離你還有點遠，再接再厲！",
-            medium: "今夜月光正好，你摘到了幸福。",
-            high: "恭喜！你成為最會摘月亮的人！"
-        };
+        // 祝福語系統（完全隨機，所有祝福語出現頻率相同）
+        const allBlessings = [
+            "月亮離你還有點遠，再接再厲！",
+            "恭喜你，成為最自由的逐雲旅人！",
+            "恭喜你，乘著雲的風，越飛越高！",
+            "今夜月光正好，你摘到了幸福。",
+            "你是月餅達人！幸福滿月、甜蜜滿分！",
+            "剝開好運、連連開心！恭喜你，成為最會開運的柚子達人！",
+            "製造幸福的月兔！你是療癒力滿點的搗藥兔！",
+            "恭喜你，成為最會摘月亮的追光者！",
+            "所有的目標，都會被你摘下！",
+            "恭喜！你成為最會摘月亮的人！",
+            "恭喜你，人氣最火、光亮全場！",
+            "恭喜你，成為今夜最閃亮的那一團火！"
+        ];
+        
+        // 完全隨機選擇祝福語
+        function getRandomBlessing() {
+            const randomIndex = Math.floor(Math.random() * allBlessings.length);
+            const selectedBlessing = allBlessings[randomIndex];
+            console.log('隨機選擇祝福語索引:', randomIndex, '內容:', selectedBlessing);
+            return selectedBlessing;
+        }
 
         // 初始化遊戲
         function initGame() {
@@ -1045,16 +1062,14 @@
         function gameOver() {
             gameState.running = false;
             
-            let blessing;
-            if (gameState.score <= 15) {
-                blessing = blessings.low;
-            } else if (gameState.score <= 35) {
-                blessing = blessings.medium;
-            } else {
-                blessing = blessings.high;
-            }
+            // 使用完全隨機祝福語系統
+            const blessing = getRandomBlessing();
             
-            playerGreetingElement.textContent = `嗨～${playerData.name}，`;
+            // 調試：確保祝福語被正確設定
+            console.log('遊戲結束，分數:', gameState.score);
+            console.log('選擇的祝福語:', blessing);
+            
+            playerGreetingElement.textContent = `親愛的${playerData.name}，`;
             finalScoreElement.textContent = `你的分數: ${gameState.score}`;
             blessingElement.textContent = blessing;
             
